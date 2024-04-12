@@ -1,0 +1,3 @@
+C:/Users/mum50/CLionProjects/laba5_Server/cmake-build-debug/CMakeFiles/laba5_Server.dir
+C:/Users/mum50/CLionProjects/laba5_Server/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/mum50/CLionProjects/laba5_Server/cmake-build-debug/CMakeFiles/rebuild_cache.dir
