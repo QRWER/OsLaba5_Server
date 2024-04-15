@@ -6,17 +6,28 @@
 #pragma comment (lib,"Ws2_32.lib")
 #pragma warning(disable: 4996)
 
-std::vector<std::string> potFood = {"stew"};
+std::vector<std::string> potFood = {"stew", "soup", "meat"};
 
-DWORD WINAPI TakeFood(LPVOID t){
-    int i = rand() % potFood.size();
-    t = &potFood[i];
-    potFood.erase(potFood.cbegin() + i);
+DWORD WINAPI Cook(LPVOID lpParam) {
+    potFood = {"stew", "soup", "meat"};
     return 0;
 }
 
-DWORD WINAPI Cook(LPVOID t) {
-    potFood = {"stew"};
+DWORD WINAPI TakeFood(LPVOID lpParam){
+    srand(time(0));
+    if(potFood.empty()){
+        HANDLE cheff = CreateThread(NULL,
+                                    0,
+                                    Cook,
+                                    NULL,
+                                    NULL,
+                                    NULL);
+        WaitForSingleObject(cheff, INFINITE);
+    }
+    std::string* food = (std::string*)lpParam;
+    int i = rand() % potFood.size();
+    *food = potFood[i];
+    potFood.erase(potFood.cbegin() + i);
     return 0;
 }
 
@@ -34,7 +45,6 @@ bool printCausedBy(int Result, const char* nameOfOper) {
 }
 
 int main() {
-    srand(time(0));
     //Загрузка библиотеки
     WSAData wsaData{}; //создаем структуру для загрузки
     //запрашиваемая версия библиотеки winsock
@@ -67,18 +77,6 @@ int main() {
         return 1;
     }
     std::string food;
-    HANDLE cheff = CreateThread(NULL,
-                                0,
-                                Cook,
-                                NULL,
-                                CREATE_SUSPENDED,
-                                NULL);
-    HANDLE pot = CreateThread(NULL,
-                              0,
-                              TakeFood,
-                              food.data(),
-                              CREATE_SUSPENDED,
-                              NULL);
     HANDLE hMutex;
     hMutex = CreateMutexA(NULL, false, "mutex");
     if (hMutex == NULL) {
@@ -123,16 +121,16 @@ int main() {
     for (uint8_t i = 0; i < n; i++) { //сокеты для соединения с клиентом
         Sockets[i] = accept(sListen, (SOCKADDR*)&addr, &sizeOfAddr);
     }
-    HANDLE cheffMutex;
-    cheffMutex = CreateMutexA(NULL, false, "cmutex");
     for(uint8_t i = 0; i < n; i++) {
-        WaitForSingleObject(cheffMutex, INFINITE);
         std::string buffer;
         printCausedBy(recv(Sockets[i], buffer.data(), sizeof(buffer), NULL), "Recv");
-        if(potFood.empty()){
-            ResumeThread(cheff);
-        }
-        ResumeThread(pot);
+        HANDLE pot = CreateThread(NULL,
+                                  0,
+                                  TakeFood,
+                                  &food,
+                                  NULL,
+                                  NULL);
+        WaitForSingleObject(pot, INFINITE);
         printCausedBy(send(Sockets[i], food.data(), sizeof(food), NULL), "Send");
         ReleaseMutex(hMutex);
     }
